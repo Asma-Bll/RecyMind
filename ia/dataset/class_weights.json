@@ -1,0 +1,29 @@
+{
+    "classes": [
+        "plastique",
+        "papier_carton",
+        "verre",
+        "metal",
+        "textile",
+        "autre",
+        "tapis_vide"
+    ],
+    "train_counts": {
+        "plastique": 1117,
+        "papier_carton": 1922,
+        "verre": 1215,
+        "metal": 651,
+        "textile": 1324,
+        "autre": 2349,
+        "tapis_vide": 378
+    },
+    "class_weights": {
+        "plastique": 1.1454,
+        "papier_carton": 0.6657,
+        "verre": 1.053,
+        "metal": 1.9653,
+        "textile": 0.9663,
+        "autre": 0.5447,
+        "tapis_vide": 3.3847
+    }
+}
