@@ -218,3 +218,24 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# RecyMind - Python backend
+.env
+*.db
+*.sqlite3
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# RecyMind - IA
+.ipynb_checkpoints/
+*.keras
+*.onnx
+*.tflite
+
+# Dataset and private data
+dataset/
+datasets/
+photos_equipe/
