@@ -1,4 +1,4 @@
-# Notes du modèle v1 (Personne 2)
+# Notes du modèle v1
 
 À compléter après l'exécution du notebook `entrainement_v1.ipynb`.
 
