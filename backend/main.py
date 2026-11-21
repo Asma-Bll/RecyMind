@@ -1,14 +1,16 @@
-import asyncio
 import random
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Literal
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-app = FastAPI(title="RecyMind API (squelette)")
+from backend import stockage
+
+app = FastAPI(title="RecyMind API (semaine 2, stockage provisoire)")
 
 # CORS : pour que le frontend (autre port) puisse appeler le backend
 app.add_middleware(
@@ -27,9 +29,24 @@ CLASSES = ["plastique", "papier_carton", "verre", "metal", "textile", "autre"]
 BACS = {"plastique": "bac_1", "papier_carton": "bac_2", "verre": "bac_3",
         "metal": "bac_4", "textile": "bac_5", "autre": "bac_6"}
 
+TypeDechet = Literal["plastique", "papier_carton", "verre", "metal", "textile", "autre"]
+Statut = Literal["trie", "controle_manuel"]
+
+
+def nettoyer_date(valeur, nom):
+    """Vérifie qu'une date est au format ISO 8601. Renvoie la date nettoyée."""
+    if valeur is None:
+        return None
+    valeur = valeur.replace(" ", "+")   # dans une URL, le "+" du fuseau devient un espace
+    try:
+        datetime.fromisoformat(valeur)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"{nom} invalide : format ISO 8601 attendu")
+    return valeur
+
 
 def faux_tri():
-    """Fabrique un faux tri, au format exact du contrat d'API."""
+    """Fabrique un faux tri au format du contrat (pour tester)."""
     classe = random.choice(CLASSES)
     confiance = round(random.uniform(0.2, 0.99), 2)
     if confiance < 0.40:
@@ -50,28 +67,58 @@ def faux_tri():
     }
 
 
-@app.get("/api/v1/stats")
-def stats():
-    # Données fictives (sans filtre, donc periode = null)
-    return {
-        "periode": None,
-        "total_tris": 120,
-        "par_type": {"plastique": 30, "papier_carton": 25, "verre": 20,
-                     "metal": 15, "textile": 10, "autre": 20},
-        "nombre_controle_manuel": 12,
-        "nombre_a_traiter": 8,
-        "taux_incertitude": 0.10,
-        "debit_objets_minute": 4.2,
-    }
+# ---------- WebSocket : diffusion des nouveaux tris ----------
+clients = set()
+
+
+async def diffuser(message):
+    for c in list(clients):
+        try:
+            await c.send_json(message)
+        except Exception:
+            clients.discard(c)
 
 
 @app.websocket("/api/v1/ws")
 async def ws(websocket: WebSocket):
     # La vérification du jeton sera ajoutée plus tard
     await websocket.accept()
+    clients.add(websocket)
     try:
         while True:
-            await websocket.send_json({"event": "nouveau_tri", "data": faux_tri()})
-            await asyncio.sleep(3)   # un faux tri toutes les 3 secondes
+            await websocket.receive_text()   # garde la connexion ouverte
     except WebSocketDisconnect:
         pass
+    finally:
+        clients.discard(websocket)
+
+
+# ---------- Routes REST ----------
+@app.get("/api/v1/tris")
+def historique(
+    date_debut: str | None = None,
+    date_fin: str | None = None,
+    type: TypeDechet | None = None,
+    statut: Statut | None = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    date_debut = nettoyer_date(date_debut, "date_debut")
+    date_fin = nettoyer_date(date_fin, "date_fin")
+    items, total = stockage.lister_tris(date_debut, date_fin, type, statut, page, limit)
+    return {"items": items, "page": page, "limit": limit, "total": total}
+
+
+@app.get("/api/v1/stats")
+def statistiques(date_debut: str | None = None, date_fin: str | None = None):
+    date_debut = nettoyer_date(date_debut, "date_debut")
+    date_fin = nettoyer_date(date_fin, "date_fin")
+    return stockage.stats(date_debut, date_fin)
+
+
+# ---------- Route TEMPORAIRE pour tester (à supprimer à l'intégration) ----------
+@app.post("/api/v1/test/faux-tri", status_code=201)
+async def creer_faux_tri():
+    tri = stockage.ajouter_tri(faux_tri())
+    await diffuser({"event": "nouveau_tri", "data": tri})
+    return tri
