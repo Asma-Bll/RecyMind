@@ -1,0 +1,22 @@
+
+services:
+  recymind-db:
+    image: postgres:16
+    container_name: recymind-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: recymind_db
+      POSTGRES_USER: recymind_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - recymind_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recymind_user -d recymind_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  recymind_data:

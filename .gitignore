@@ -151,6 +151,12 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
+**/.env
+__pycache__/
+*.py[cod]
+.venv/
 .envrc
 .venv
 env/
@@ -218,3 +224,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Images du dataset
+ia/dataset/raw/
+ia/dataset/processed/
+ia/dataset/augmented/
+
+# Environnement Python
+ia/.venv/
+*.pyc
+
+# Images envoyées à l'API
+backend/uploads/
+backend/uploads/tris/*
+!backend/uploads/tris/.gitkeep
