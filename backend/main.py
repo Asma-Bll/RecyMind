@@ -1,8 +1,11 @@
 
+import logging
 from contextlib import asynccontextmanager
-from routes import ws as ws_routes
-from fastapi import FastAPI
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from auth import models
 from corrections import models as corrections_models
@@ -11,6 +14,7 @@ from config import settings
 from database import Base, engine
 from routes import auth as auth_routes
 from routes import corrections as corrections_routes
+from routes import ws as ws_routes
 
 
 @asynccontextmanager
@@ -19,6 +23,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
+logger = logging.getLogger("recymind")
 app = FastAPI(title="RecyMind", version="1.2", lifespan=lifespan)
 
 app.add_middleware(
@@ -36,3 +41,23 @@ app.include_router(corrections_routes.router, prefix="/api/v1")
 @app.get("/api/v1/sante")
 def sante():
     return {"etat": "ok"}
+
+
+@app.exception_handler(RequestValidationError)
+async def erreur_validation(request: Request, exc: RequestValidationError):
+    detail = [
+        {"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]}
+        for e in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": detail})
+
+
+@app.exception_handler(Exception)
+async def erreur_interne(request: Request, exc: Exception):
+    logger.exception(
+        "Erreur interne sur %s %s", request.method, request.url.path
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erreur interne du serveur."},
+    )
