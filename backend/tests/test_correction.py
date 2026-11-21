@@ -67,6 +67,44 @@ def test_simulateur_403_sur_correction():
     assert post(TRI_CTRL, {"type_corrige": "verre"}, who="simulateur").status_code == 403
 
 
+# ---- liste des tris en controle manuel ----
+
+def test_liste_controle_manuel_operateur():
+    r = client.get(
+        "/api/v1/corrections/controle-manuel",
+        headers=auth("operateur1")
+    )
+
+    assert r.status_code == 200
+    data = r.json()
+    assert isinstance(data, list)
+
+    ids = [item["id"] for item in data]
+    assert str(TRI_CTRL) in ids
+    assert str(TRI_CTRL2) in ids
+
+
+def test_liste_controle_manuel_admin():
+    r = client.get(
+        "/api/v1/corrections/controle-manuel",
+        headers=auth("admin1")
+    )
+    assert r.status_code == 200
+
+
+def test_liste_controle_manuel_simulateur_refuse():
+    r = client.get(
+        "/api/v1/corrections/controle-manuel",
+        headers=auth("simulateur")
+    )
+    assert r.status_code == 403
+
+
+def test_liste_controle_manuel_sans_jeton():
+    r = client.get("/api/v1/corrections/controle-manuel")
+    assert r.status_code == 401
+
+
 # ---- correction ----
 def test_422_type_invalide_et_tapis_vide():
     assert post(TRI_CTRL, {"type_corrige": "banane"}).status_code == 422
