@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<title>Connexion – RecyMind</title></head><body>
+<section id="login">
+  <h1>RecyMind</h1><p class="sub">Connectez-vous pour suivre le tri en direct.</p>
+  <form id="f">
+    <div class="field"><label for="u">Nom d'utilisateur</label><input id="u" autocomplete="username" required></div>
+    <div class="field"><label for="p">Mot de passe</label><input id="p" type="password" autocomplete="current-password" required></div>
+    <button id="b">Se connecter</button><p class="err" id="err" role="alert"></p>
+  </form>
+</section>
+<script src="js/app.js"></script>
+<script>
+if (token()) location.replace('index.html');
+$('#f').onsubmit = async e => {
+  e.preventDefault(); $('#b').disabled = true; $('#err').textContent = '';
+  try {
+    const d = await api('/login', {method:'POST', body: JSON.stringify({username:$('#u').value, password:$('#p').value})});
+    if (d.user.role === 'simulateur') throw new Error('Ce compte est réservé au simulateur.');
+    sessionStorage.setItem('rm_token', d.access_token); sessionStorage.setItem('rm_user', JSON.stringify(d.user));
+    location.href = 'index.html';
+  } catch (x) { $('#err').textContent = x.message; $('#b').disabled = false; }
+};
+</script></body></html>

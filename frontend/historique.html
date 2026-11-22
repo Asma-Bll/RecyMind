@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<title>Historique – RecyMind</title></head><body>
+<main>
+  <p class="err" id="globalErr" role="alert"></p>
+  <section class="panel"><h2>Historique des tris</h2>
+    <div class="filters">
+      <div><label for="fType">Type</label><select id="fType"><option value="">Tous</option></select></div>
+      <div><label for="fStatut">Statut</label><select id="fStatut"><option value="">Tous</option><option value="trie">Trié</option><option value="controle_manuel">Contrôle manuel</option></select></div>
+      <div><label for="fFrom">Du</label><input id="fFrom" type="datetime-local"></div>
+      <div><label for="fTo">Au</label><input id="fTo" type="datetime-local"></div>
+      <button id="fApply">Filtrer</button><button class="ghost" id="fReset">Réinitialiser</button>
+    </div>
+    <div class="scroll"><table><thead><tr><th>Image</th><th>Date</th><th>Type</th><th>Confiance</th><th>Bac</th><th>Statut</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="pager"><button class="ghost" id="prev">Précédent</button><span id="pageInfo"></span><button class="ghost" id="next">Suivant</button></div>
+  </section>
+</main>
+<dialog id="dlg"><div id="dlgBody"></div></dialog>
+<script src="js/app.js"></script>
+<script>
+let page = 1, limit = 10, total = 0;
+for (const [k, [n]] of Object.entries(CLASSES)) $('#fType').append(el('option', {value:k}, n));
+function query() {
+  const p = new URLSearchParams({page, limit}), v = id => $(id).value;
+  if (v('#fType')) p.set('type', v('#fType'));
+  if (v('#fStatut')) p.set('statut', v('#fStatut'));
+  if (v('#fFrom')) p.set('date_debut', new Date(v('#fFrom')).toISOString());
+  if (v('#fTo')) p.set('date_fin', new Date(v('#fTo')).toISOString());
+  return p;
+}
+async function loadHistory() {
+  try {
+    const d = await api('/tris?' + query()); total = d.total; const rows = $('#rows'); rows.replaceChildren();
+    if (!d.items.length) rows.append(el('tr', {}, el('td', {colspan:6, class:'empty'}, 'Aucun résultat pour ces filtres.')));
+    for (const t of d.items) rows.append(el('tr', {class:'row', tabindex:0, onclick:() => openDetail(t), onkeydown:e => e.key === 'Enter' && openDetail(t)},
+      el('td', {}, el('img', {src:img(t.image_url), alt:'', loading:'lazy'})), el('td', {}, fmt(t.date)), el('td', {}, label(t.type)),
+      el('td', {}, Math.round(t.confiance * 100) + ' %'), el('td', {}, t.bac ? BAC[t.bac] : '–'), el('td', {}, statusBadge(t))));
+    const pages = Math.max(1, Math.ceil(total / limit));
+    $('#pageInfo').textContent = 'Page ' + page + ' sur ' + pages + ' · ' + total + ' résultat(s)';
+    $('#prev').disabled = page <= 1; $('#next').disabled = page >= pages;
+  } catch (x) { showErr(x); }
+}
+$('#fApply').onclick = () => { page = 1; loadHistory(); };
+$('#fReset').onclick = () => { ['#fType','#fStatut','#fFrom','#fTo'].forEach(i => $(i).value = ''); page = 1; loadHistory(); };
+$('#prev').onclick = () => { page--; loadHistory(); };
+$('#next').onclick = () => { page++; loadHistory(); };
+
+function openDetail(t) {
+  const b = $('#dlgBody'); b.replaceChildren();
+  const dl = el('dl', {}, el('dt', {}, 'Date'), el('dd', {}, fmt(t.date)),
+    el('dt', {}, 'Prédiction IA'), el('dd', {}, label(t.type) + ' (' + Math.round(t.confiance * 100) + ' %)'),
+    el('dt', {}, 'Bac'), el('dd', {}, t.bac ? BAC[t.bac] : 'Contrôle manuel'), el('dt', {}, 'Statut'), el('dd', {}, statusBadge(t)));
+  if (t.correction) dl.append(el('dt', {}, 'Corrigé le'), el('dd', {}, fmt(t.correction.date_correction)));
+  b.append(el('img', {src:img(t.image_url), alt:'Image du déchet'}), dl);
+  if (t.statut === 'controle_manuel' && !t.correction) {
+    const sel = el('select', {id:'corr'}), err = el('p', {class:'err', role:'alert'});
+    for (const [k, [n]] of Object.entries(CLASSES)) sel.append(el('option', {value:k}, n));
+    const ok = el('button', {onclick: async () => {
+      ok.disabled = true; err.textContent = '';
+      try { openDetail(await api('/tris/' + t.id + '/correction', {method:'POST', body: JSON.stringify({type_corrige: sel.value})})); loadHistory(); }
+      catch (x) { err.textContent = x.message; ok.disabled = false; }
+    }}, 'Enregistrer la correction');
+    b.append(el('div', {class:'actions'}, el('div', {}, el('label', {for:'corr'}, 'Type réel du déchet'), sel), ok), err);
+  }
+  b.append(el('div', {class:'actions', style:'margin-top:.75rem'}, el('button', {class:'ghost', onclick:() => $('#dlg').close()}, 'Fermer')));
+  if (!$('#dlg').open) $('#dlg').showModal();
+}
+if (initPage('historique.html', {onTri: () => { if (page === 1) loadHistory(); }, onReconnect: loadHistory})) loadHistory();
+</script></body></html>

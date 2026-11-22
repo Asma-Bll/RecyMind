@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<title>Direct – RecyMind</title></head><body>
+<main>
+  <p class="err" id="globalErr" role="alert"></p>
+  <div id="metrics"></div>
+  <div class="grid">
+    <section class="panel" aria-live="polite"><h2>Dernier déchet trié</h2>
+      <div id="live"><p class="empty">Aucun tri pour l'instant. Démarrez la simulation pour voir les déchets arriver.</p></div></section>
+    <section class="panel"><h2>Derniers tris</h2>
+      <div class="scroll"><table><thead><tr><th>Image</th><th>Heure</th><th>Type</th><th>Bac</th><th>Statut</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <p><a href="historique.html">Voir tout l'historique</a></p></section>
+  </div>
+</main>
+<script src="js/app.js"></script>
+<script>
+function showLive(t) {
+  const box = $('#live'); box.replaceChildren();
+  const low = t.statut === 'controle_manuel', pct = Math.round(t.confiance * 100);
+  box.append(el('img', {id:'liveImg', src:img(t.image_url), alt:'Dernier déchet : ' + label(t.type)}),
+    el('div', {class:'type', style:'--c:' + (CLASSES[t.type] || [])[1]}, el('i', {class:'sw'}), label(t.type)),
+    el('div', {class:'bar' + (low ? ' low' : ''), role:'img', 'aria-label':'Confiance ' + pct + ' %'}, el('i', {style:'width:' + pct + '%'})),
+    el('div', {class:'meta'}, el('span', {}, 'Confiance ' + pct + ' %'), el('b', {}, low ? 'Contrôle manuel' : 'Destination : ' + (BAC[t.bac] || t.bac))),
+    el('div', {class:'meta'}, el('span', {}, fmt(t.date))));
+}
+async function loadRecent() {
+  try {
+    const d = await api('/tris?limit=6'); const rows = $('#rows'); rows.replaceChildren();
+    if (d.items[0] && !$('#liveImg')) showLive(d.items[0]);
+    for (const t of d.items) rows.append(el('tr', {}, el('td', {}, el('img', {src:img(t.image_url), alt:'', loading:'lazy'})),
+      el('td', {}, new Date(t.date).toLocaleTimeString('fr-FR')), el('td', {}, label(t.type)), el('td', {}, t.bac ? BAC[t.bac] : '–'), el('td', {}, statusBadge(t))));
+  } catch (x) { showErr(x); }
+}
+async function loadAll() { loadRecent(); try { showMetrics(await api('/stats')); } catch (x) { showErr(x); } }
+if (initPage('index.html', {onTri: t => { showLive(t); loadAll(); }, onReconnect: loadAll})) loadAll();
+</script></body></html>

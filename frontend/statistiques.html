@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<title>Statistiques – RecyMind</title></head><body>
+<main>
+  <p class="err" id="globalErr" role="alert"></p>
+  <div class="filters">
+    <div><label for="fFrom">Du</label><input id="fFrom" type="datetime-local"></div>
+    <div><label for="fTo">Au</label><input id="fTo" type="datetime-local"></div>
+    <button id="fApply">Appliquer</button><button class="ghost" id="fReset">Tout afficher</button>
+  </div>
+  <div id="bins"></div><div id="metrics"></div>
+  <section class="panel"><h2>Répartition par type</h2><div id="bars"></div></section>
+</main>
+<script src="js/app.js"></script>
+<script>
+async function loadStats() {
+  const p = new URLSearchParams();
+  if ($('#fFrom').value) p.set('date_debut', new Date($('#fFrom').value).toISOString());
+  if ($('#fTo').value) p.set('date_fin', new Date($('#fTo').value).toISOString());
+  try {
+    const s = await api('/stats' + (p.toString() ? '?' + p : ''));
+    const bins = $('#bins'), bars = $('#bars'); bins.replaceChildren(); bars.replaceChildren();
+    const max = Math.max(1, ...Object.values(s.par_type));
+    for (const [k, [name, color, bac]] of Object.entries(CLASSES)) {
+      const n = s.par_type[k] ?? 0;
+      bins.append(el('div', {class:'bin', style:'--c:' + color}, el('b', {}, String(n)), el('span', {}, bac + ' · ' + name)));
+      bars.append(el('div', {class:'hrow', style:'--c:' + color}, el('span', {}, name), el('div', {class:'bar'}, el('i', {style:'width:' + n / max * 100 + '%'})), el('b', {}, String(n))));
+    }
+    showMetrics(s);
+  } catch (x) { showErr(x); }
+}
+$('#fApply').onclick = loadStats;
+$('#fReset').onclick = () => { $('#fFrom').value = ''; $('#fTo').value = ''; loadStats(); };
+if (initPage('statistiques.html', {onTri: loadStats, onReconnect: loadStats})) loadStats();
+</script></body></html>
