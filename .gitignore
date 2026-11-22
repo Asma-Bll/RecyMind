@@ -240,3 +240,6 @@ dataset/
 datasets/
 photos_equipe/
 retraining/
+# RecyMind - Images envoyees par les utilisateurs
+backend/images/*
+!backend/images/.gitkeep

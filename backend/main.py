@@ -6,6 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from auth import models
 from corrections import models as corrections_models
@@ -28,6 +30,10 @@ async def lifespan(app: FastAPI):
 
 logger = logging.getLogger("recymind")
 app = FastAPI(title="RecyMind", version="1.2", lifespan=lifespan)
+IMAGES_DIR = Path(__file__).resolve().parent / "images"
+IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
 
 app.add_middleware(
     CORSMiddleware,
