@@ -1,0 +1,5 @@
+{
+    "seuil": 0.7,
+    "regle": "Confiance >= seuil : accepté, sinon contrôle manuel",
+    "classe_controle_manuel": "tapis_vide"
+}
