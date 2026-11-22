@@ -10,11 +10,14 @@ from fastapi.responses import JSONResponse
 from auth import models
 from corrections import models as corrections_models
 from tris import models as tris_models
+from routes import ia as ia_routes
 from config import settings
 from database import Base, engine
 from routes import auth as auth_routes
 from routes import corrections as corrections_routes
 from routes import ws as ws_routes
+from routes import tris as tris_routes
+
 
 
 @asynccontextmanager
@@ -36,6 +39,8 @@ app.add_middleware(
 app.include_router(auth_routes.router, prefix="/api/v1")
 app.include_router(ws_routes.router, prefix="/api/v1")
 app.include_router(corrections_routes.router, prefix="/api/v1")
+app.include_router(tris_routes.router, prefix="/api/v1")
+app.include_router(ia_routes.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/sante")
