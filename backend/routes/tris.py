@@ -19,8 +19,8 @@ CLASSES = [
     "metal",
     "textile",
     "autre",
+    "tapis_vide"
 ]
-
 
 def filtres_dates(date_debut, date_fin):
     conditions = []
