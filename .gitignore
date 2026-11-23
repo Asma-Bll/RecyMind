@@ -219,4 +219,11 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Ignore Keras models by default
 *.keras
+
+# Allow the RecyMind AI model
+!ia/modele/modele_v1.keras
+
+ia/donnees_test/
+
