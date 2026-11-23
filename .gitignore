@@ -226,4 +226,9 @@ __marimo__/
 !ia/modele/modele_v1.keras
 
 ia/donnees_test/
+# Ignore Keras models by default
+*.keras
 
+# Allow the RecyMind AI models
+!ia/modele/modele_v1.keras
+!ia/modele/modele_v3.keras
