@@ -1,8 +1,8 @@
-# Notes du modèle v1
+﻿# Notes du modèle v1
 
 À compléter après l'exécution du notebook `entrainement_v1.ipynb`.
 
-|| Élément | Valeur |
+| Élément | Valeur |
 | --- | --- |
 | Accuracy de validation (dataset seul) | 0.9058 (90.58 %) |
 | Nombre de classes du dataset | 10 |
