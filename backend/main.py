@@ -19,7 +19,7 @@ from routes import auth as auth_routes
 from routes import corrections as corrections_routes
 from routes import ws as ws_routes
 from routes import tris as tris_routes
-
+from routes import simulation as simulation_routes
 
 
 @asynccontextmanager
@@ -47,6 +47,7 @@ app.include_router(ws_routes.router, prefix="/api/v1")
 app.include_router(corrections_routes.router, prefix="/api/v1")
 app.include_router(tris_routes.router, prefix="/api/v1")
 app.include_router(ia_routes.router, prefix="/api/v1")
+app.include_router(simulation_routes.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/sante")
